@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      body {
+        margin: 0;
+        padding-bottom: 3rem;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+      }
+
+      #form {
+        background: rgba(0, 0, 0, 0.15);
+        padding: 0.25rem;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        height: 3rem;
+        box-sizing: border-box;
+        backdrop-filter: blur(10px);
+      }
+      #input {
+        border: none;
+        padding: 0 1rem;
+        flex-grow: 1;
+        border-radius: 2rem;
+        margin: 0.25rem;
+      }
+      #input:focus {
+        outline: none;
+      }
+      #form > button {
+        background: #333;
+        border: none;
+        padding: 0 1rem;
+        margin: 0.25rem;
+        border-radius: 3px;
+        outline: none;
+        color: #fff;
+      }
+
+      #messages {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+      }
+      #messages > li {
+        padding: 0.5rem 1rem;
+      }
+      #messages > li:nth-child(odd) {
+        background: #efefef;
+      }
+
+      #user-nickname {
+        margin-top: 1rem;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <ul id="messages"></ul>
+    <form id="form" action="">
+      <input id="input" autocomplete="off" /><button>Send</button>
+    </form>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+      var socket = io();
+
+      var messages = document.getElementById("messages");
+      var form = document.getElementById("form");
+      var input = document.getElementById("input");
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (input.value) {
+          socket.emit("chat message", input.value);
+          input.value = "";
+        }
+      });
+
+      socket.on("chat message", function (message) {
+        var item = document.createElement("li");
+
+        // Check if the sender is the current user
+        if (message.sender === "You") {
+          item.textContent = "You: " + message.message;
+          item.style.color = "blue";
+          item.classList.add("sender-message"); // Add class for styling
+        } else {
+          item.textContent = message.sender + ": " + message.message;
+        }
+
+        messages.appendChild(item);
+        window.scrollTo(0, document.body.scrollHeight);
+      });
+
+      socket.on("request nickname", function () {
+        var nickname = prompt("Enter your nickname:") || generateRandomId();
+        socket.emit("set nickname", nickname);
+      });
+
+      socket.on("user connected", function (message) {
+        var item = document.createElement("li");
+        item.textContent = message;
+        item.style.color = "green";
+        messages.appendChild(item);
+      });
+
+      socket.on("user disconnected", function (message) {
+        var item = document.createElement("li");
+        item.textContent = message;
+        item.style.color = "red";
+        messages.appendChild(item);
+      });
+
+      function generateRandomId() {
+        return Math.random().toString(36).substring(2, 8);
+      }
+    </script>
+  </body>
+</html>
